@@ -46,3 +46,27 @@ View(GP_records)
 OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2')
 OPCS_records=read_OPCS(OPCS_codes)
 View(OPCS_records)
+
+
+
+
+
+
+
+# GP read codes for hypertension
+
+GP_codes=c('G2','G20','G200','G201','G203','G20z','G24','G240','G240z','G241','G241z','G244,'G24z','G24z0','G24zz','G25','G250','G251','G26','G28','G2y','G2z','Gyu2','Gyu20',)
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+# GP read codes for diabetes
+
+GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C10E2','C10E3','C10E4','C10E5','C10E6','C10E7','C10E8','C10E9','C10EA',
+  'C10EB','C10EC','C10ED','C10EE','C10EF','C10EG','C10EH','C10EJ','C10EK','C10EL','C10EM','C10EN','C10EP','C10EQ','C10ER','C10F','C10F0','C10F1','C10F2',
+  'C10F3','C10F4','C10F5','C10F6','C10F7','C10F8','C10F9','C10FA','C10FB','C10FC','C10FD','C10FE','C10FF','C10FG','C10FH','C10FJ','C10FK','C10FL','C10FM',
+  'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP',)
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+
+
