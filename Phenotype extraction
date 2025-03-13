@@ -30,8 +30,11 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/new_baseline.R") 
 
 # ICD10 codes for kidney disease & failure
 
-ICD10_codes=c('N18','N18.1', 'N18.2', 'N18.3', 'N18.4', 'N18.5', 'N18.9', 'N19', Z49.0, Z99.2)
+ICD10_codes=c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4')
 ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# Need some identification of kidney failure from eGFR/creatinine
 
 # GP read codes for kidney disease
 
@@ -59,6 +62,14 @@ GP_codes=c('G2','G20','G200','G201','G203','G20z','G24','G240','G240z','G241','G
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
+# ICD10 codes for diabetes
+
+ICD10_codes=c('E10','E10.0','E10.1','E10.2','E10.3','E10.4','E10.5','E10.6','E10.7','E10.8','E10.9','E11.0','E11.1','E11.2','E11.3','E11.4','E11.5','E11.6','E11.7','E11.8','E11.9',
+  'E12.0','E12.1','E12.2','E12.3','E12.4','E12.5','E12.6','E12.7','E12.8','E12.9','E13.0','E13.1','E13.2','E13.3','E13.4','E13.5','E13.6','E13.7','E13.8','E13.9','E14.0',
+  'E14.1','E14.2','E14.3','E14.4','E14.5','E14.6','E14.7','E14.8','E14.9',)
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
 # GP read codes for diabetes
 
 GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C10E2','C10E3','C10E4','C10E5','C10E6','C10E7','C10E8','C10E9','C10EA',
@@ -68,5 +79,18 @@ GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
+# ICD10 codes for dementia
+
+#Taken from the definition used by the UKBDRS study but with a few specific forms of dementia with a specific rare infective, alcoholic or monogenic cause excluded (CJD, HIV-related dementia, Huntingdon's disease, Korsakoff's)
+
+ICD10_codes=c('F00','F00.0','F00.1','F00.2','F00.9','F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','F02','F02.0','F02.3','F02.8','F03','F05.1','G30','G30.0','G30.1','G30.8','G30.9','G31.0','G31.1','G31.8','I67.3')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# Read codes for dementia
+
+GP_codes=c(')
+GP_records=read_GP(GP_codes)
+View(GP_records)
 
 
