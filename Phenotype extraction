@@ -25,9 +25,9 @@ system('dx download file-GZKXVx8J9jFp1qpBQZ8z5PbJ') # download death records
 system('dx download file-GZKXVx8J9jFqG2GvJV8vzxK1') # download death causes
 system('dx download file-Gz0jqg0Jf08B1XP8y0X45K0V') # download cancer registry tsv (with ICD9)
 
-
 source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/new_baseline.R") #create baseline table
 
+##Kidney disease and failure
 # ICD10 codes for kidney disease & failure
 
 ICD10_codes=c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4')
@@ -35,6 +35,8 @@ ICD10_records=read_ICD10(ICD10_codes)
 View(ICD10_records)
 
 # Need some identification of kidney failure from eGFR/creatinine
+
+***
 
 # GP read codes for kidney disease
 
@@ -50,18 +52,14 @@ OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2')
 OPCS_records=read_OPCS(OPCS_codes)
 View(OPCS_records)
 
-
-
-
-
-
-
+##Hypertension
 # GP read codes for hypertension
 
 GP_codes=c('G2','G20','G200','G201','G203','G20z','G24','G240','G240z','G241','G241z','G244,'G24z','G24z0','G24zz','G25','G250','G251','G26','G28','G2y','G2z','Gyu2','Gyu20',)
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
+##Diabetes
 # ICD10 codes for diabetes
 
 ICD10_codes=c('E10','E10.0','E10.1','E10.2','E10.3','E10.4','E10.5','E10.6','E10.7','E10.8','E10.9','E11.0','E11.1','E11.2','E11.3','E11.4','E11.5','E11.6','E11.7','E11.8','E11.9',
@@ -79,6 +77,7 @@ GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
+##Dementia
 # ICD10 codes for dementia
 
 #Taken from the definition used by the UKBDRS study but with a few specific forms of dementia with a specific rare infective, alcoholic or monogenic cause excluded (CJD, HIV-related dementia, Huntingdon's disease, Korsakoff's)
@@ -89,8 +88,53 @@ View(ICD10_records)
 
 # Read codes for dementia
 
-GP_codes=c(')
+GP_codes=c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041',)
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
+##Depression
 
+##Stroke
+
+##MCI
+# Read codes for MCI
+
+GP_codes=c('Eu057','X00RS',)
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+#ICD10 codes for MCI
+
+ICD10_codes=c('F06.7')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# Self-reported data
+
+read_selfreport(1065) # hypertension
+read_selfreport(1072) # essential hypertension
+read_selfreport(1081) # stroke
+read_selfreport(1082) # TIA
+read_selfreport(1192) # kidney failure
+read_selfreport(1193) # renal failure requiring dialysis
+read_selfreport(1194) # renal failure not requiring dialysis
+read_selfreport(1222) # type 1 diabetes
+read_selfreport(1223) # type 2 diabetes
+read_selfreport(1261) # multiple sclerosis
+read_selfreport(1262) # Parkinsons
+read_selfreport(1263) # dementia 
+read_selfreport(1286) # depression
+read_selfreport(1405) # other renal problem
+read_selfreport(1427) # polycystic kidney
+read_selfreport(1471) # atrial fibrillation
+read_selfreport(1473) # high cholesterol
+read_selfreport(1483) # atrial flutter
+read_selfreport(1519) # kidney nephropathy
+read_selfreport(1520) # iga nephropathy
+read_selfreport(1583) # ischaemic stroke
+read_selfreport(1607) # diabetic nephropathy
+read_selfreport(1608) # nephritis
+read_selfreport(1609) # glomerulonephritis
+
+# The eventual UKBDRS used the following 11 predictors: age, diabetes, depression, stroke, hypertension, high cholesterol, Townsend deprivation score, education, sex (male), household occupancy, parental history (and optionally, ApoE status)
+# Patients with baseline dementia or developing dementia within the first 12 months were excluded
