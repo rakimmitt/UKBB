@@ -6,6 +6,7 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/UKBB_Health_Recor
 # While the functions are designed to take the codes above, since all of the filtering relies on a system-level grep it is also possible to filter on a participant ID instead of a healthcare code.
 
 library('dplyr')
+library('ggplot2')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -57,7 +58,7 @@ View(OPCS_records)
 
 # GP read codes for hypertension
 
-GP_codes=c('G2','G20','G200','G201','G203','G20z','G24','G240','G240z','G241','G241z','G244,'G24z','G24z0','G24zz','G25','G250','G251','G26','G28','G2y','G2z','Gyu2','Gyu20',)
+GP_codes=c('G2', 'G20', 'G200',  'G2...', 'G20..', 'G200.', 'G201.', 'G203.', 'G20z.', 'G24..', 'G240.', 'G240z', 'G241.', 'G241z', 'G244.', 'G24z', 'G24z0', 'G24zz', 'G25', 'G250', 'G251', 'G26', 'G28', 'G2y', 'G2z', 'Gyu2', 'Gyu20')
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
@@ -135,7 +136,7 @@ View(ICD10_records)
 
 # Read codes for dementia
 
-GP_codes=c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041',)
+GP_codes=c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041')
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
@@ -157,7 +158,7 @@ View(ICD10_records)
 
 # GP read codes for depression
 
-GP_codes=c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2',)
+GP_codes=c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2')
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
@@ -205,7 +206,7 @@ View(GP_records)
 
 # Read codes for MCI
 
-GP_codes=c('Eu057','X00RS',)
+GP_codes=c('Eu057','X00RS')
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
@@ -244,3 +245,45 @@ read_selfreport(1609) # glomerulonephritis
 
 # The eventual UKBDRS used the following 11 predictors: age, diabetes, depression, stroke, hypertension, high cholesterol, Townsend deprivation score, education, sex (male), household occupancy, parental history (and optionally, ApoE status)
 # Patients with baseline dementia or developing dementia within the first 12 months were excluded
+
+## Summary statistics
+
+# Count ICD10 diagnoses
+# Remove duplicate rows based on 'eid' and 'diag_icd10', then count the occurrences of each diagnosis
+diagnosis_counts <- ICD10_records %>%
+  distinct(eid, diag_icd10, .keep_all = TRUE) %>%  # Remove duplicates based on 'eid' and 'diag_icd10'
+  group_by(diag_icd10) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+# View the result
+print(diagnosis_counts)
+
+# Count read code diagnoses
+# Remove duplicate rows based on 'eid' and 'read_2', then count the occurrences of each diagnosis
+diagnosis_counts <- GP_records %>%
+  distinct(eid, read_2, .keep_all = TRUE) %>%  # Remove duplicates based on 'eid' and 'read_2'
+  group_by(read_2) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+# View the result
+print(diagnosis_counts)
+
+# Count read code diagnoses
+# Remove duplicate rows based on 'eid' and 'read_3', then count the occurrences of each diagnosis
+diagnosis_counts <- GP_records %>%
+  distinct(eid, read_3, .keep_all = TRUE) %>%  # Remove duplicates based on 'eid' and 'read_3'
+  group_by(read_3) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+# View the result
+print(diagnosis_counts)
+
+# Count OPSC code diagnoses
+# Remove duplicate rows based on 'eid' and 'oper4', then count the occurrences of each diagnosis
+diagnosis_counts <- OPCS_records %>%
+  distinct(eid, oper4, .keep_all = TRUE) %>%  # Remove duplicates based on 'eid' and 'oper4'
+  group_by(oper4) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+# View the result
+print(diagnosis_counts)
