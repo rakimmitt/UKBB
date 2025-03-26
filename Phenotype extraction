@@ -63,6 +63,12 @@ View(GP_records)
 
 # ICD-10 codes for hypertension
 
+ICD10_codes=c('I10', 'I11', 'I12', 'I13', 'I15', 'I67.4')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# Medications codes for hypertension (CCBs, ACEis, thiazides, a-blockers)
+
 ##
 
 ##Diabetes
@@ -71,7 +77,7 @@ View(GP_records)
 
 ICD10_codes=c('E10','E10.0','E10.1','E10.2','E10.3','E10.4','E10.5','E10.6','E10.7','E10.8','E10.9','E11.0','E11.1','E11.2','E11.3','E11.4','E11.5','E11.6','E11.7','E11.8','E11.9',
   'E12.0','E12.1','E12.2','E12.3','E12.4','E12.5','E12.6','E12.7','E12.8','E12.9','E13.0','E13.1','E13.2','E13.3','E13.4','E13.5','E13.6','E13.7','E13.8','E13.9','E14.0',
-  'E14.1','E14.2','E14.3','E14.4','E14.5','E14.6','E14.7','E14.8','E14.9',)
+  'E14.1','E14.2','E14.3','E14.4','E14.5','E14.6','E14.7','E14.8','E14.9')
 ICD10_records=read_ICD10(ICD10_codes)
 View(ICD10_records)
 
@@ -80,9 +86,41 @@ View(ICD10_records)
 GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C10E2','C10E3','C10E4','C10E5','C10E6','C10E7','C10E8','C10E9','C10EA',
   'C10EB','C10EC','C10ED','C10EE','C10EF','C10EG','C10EH','C10EJ','C10EK','C10EL','C10EM','C10EN','C10EP','C10EQ','C10ER','C10F','C10F0','C10F1','C10F2',
   'C10F3','C10F4','C10F5','C10F6','C10F7','C10F8','C10F9','C10FA','C10FB','C10FC','C10FD','C10FE','C10FF','C10FG','C10FH','C10FJ','C10FK','C10FL','C10FM',
-  'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP',)
+  'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP')
 GP_records=read_GP(GP_codes)
 View(GP_records)
+
+##AF
+
+# ICD10 codes for AF
+
+ICD10_codes=c('I48', 'I48.0', 'I48.1', 'I48.2', 'I48.91')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# GP read codes for AF
+
+GP_codes=c('G573.', 'G5730', 'G5731', 'G5732', 'G5733', 'G5734', 'G5735', 'G5736', 'G5737', 'G5738', 'G5739', 'G573z')
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+## High cholesterol
+
+# ICD10 codes for high cholesterol
+
+ICD10_codes=c('E78.0', 'E78.2', 'E78.4', 'E78.5', 'E78.8', 'I48.2', 'I48.91')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# GP read codes for high cholesterol
+
+GP_codes=c('C320.', 'C3200', 'C3201', 'C3202', 'C3203', 'C3204', 'C3205', 'C3206', 'C320y', 'C320z', 'C322.', 'C3220', 'C324.')
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+## Need some measure of cholesterol purely from LDL measurements
+
+## Need some measure of cholesterol from medication codes (i.e. statin use)
 
 ##Dementia
 
@@ -105,16 +143,63 @@ View(GP_records)
 
 ###
 
-# Dementia from dementia medications
+# Dementia from dementia medications (galantamine, rivastigmine, memantine, donepezil)
 
 ###
 
 ##Depression
 
+# ICD10 codes for depression
 
+ICD10_codes=c('F320', 'F321', 'F322', 'F323', 'F328', 'F329', 'F330', 'F331', 'F332', 'F333', 'F334', 'F328', 'F339')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
 
+# GP read codes for depression
 
-##Stroke
+GP_codes=c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2',)
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+# Medication codes for depression
+
+## TBI
+
+# ICD10 codes for traumatic brain injury
+
+ICD10_codes=c('S060', 'S061', 'S062', 'S063', 'S064', 'S065', 'S066', 'S067', 'S068', 'S069', 'S070', 'S071', 'S078', 'S079', 'S097', 'S098', 'S099')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+##Stroke/TIA
+
+# ICD10 codes for stroke/TIA
+
+ICD10_codes=c('I60.0', 'I60.1', 'I60.2', 'I60.3', 'I60.4', 'I60.5', 'I60.6', 'I60.7', 'I60.8', 'I60.9', 'I61.0', 'I61.1', 'I61.2', 'I61.3', 'I61.4', 'I61.5', 'I61.6', 'I61.8', 'I61.9','I62.9', 'I63.0', 
+'I63.1', 'I63.2', 'I63.3', 'I63.4', 'I63.5', 'I63.6', 'I63.8', 'I63.9', 'I64.X', 'I65.0', 'I65.1', 'I65.2', 'I65.3', 'I65.8', 'I65.9', 'I66.0', 'I66.1', 'I66.2', 'I66.3', 'I66.4', 'I66.8', 'I66.9', 'G45.0', 
+'G45.1', 'G45.2', 'G45.3', 'G45.8', 'G45.9', 'G46.0', 'G46.1',  'G46.2', 'G46.3', 'G46.4', 'G46.5', 'G46.6', 'G46.7', 'G46.8')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# GP read codes for stroke/TIA
+
+GP_codes=c('G61..', 'G610.', 'G611.', 'G612.', 'G613.', 'G614.', 'G615.', 'G616.', 'G617.', 'G618.', 'G619.', 'G61X.', 'G61X0', 'G61X1', 'G61z.', 'G62z.', 'G63..', 'G630.', 'G631.', 'G632.', 'G633.', 'G634.', 
+'G63y0', 'G63y1', 'G63z.', 'G64..', 'G640.', 'G6400', 'G641.', 'G6410', 'G64z.', 'G64z0', 'G65..', 'G650.', 'G651.', 'G6510', 'G652.', 'G653.', 'G654.', 'G656.', 'G657.', 'G65y.', 'G65z.', 'G65z0', 'G65z1', 'G65zz', 'G66..', 
+'G660.', 'G661.', 'G662.', 'G663.', 'G664.', 'G665.', 'G666.', 'G667.', 'G668.', 'G67..', 'G6710.')
+GP_records=read_GP(GP_codes)
+View(GP_records)
+
+## Parental history of dementia
+
+###
+
+## Household occupancy
+
+###
+
+## ApoE status
+
+###
 
 ##MCI
 
