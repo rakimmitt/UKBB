@@ -7,6 +7,7 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/UKBB_Health_Recor
 
 library('dplyr')
 library('ggplot2')
+library('tidyr')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -40,19 +41,34 @@ View(ICD10_records)
 
 ###
 
-# GP read codes for kidney disease
+# GP read codes for kidney disease & failure
 
-GP_codes=c('1Z10','1Z11','1Z12','1Z13','1Z14','1Z15','1Z16','1Z17','1Z18','1Z19','1Z1A','1Z1B','1Z1C','1Z1D','1Z1E','1Z1F',
-  '1Z1G','1Z1H','1Z1J','1Z1K','1Z1L','1Z1M','1Z1N','1Z1O','1Z1P','1Z1Q','1Z1R','1Z1S','1Z1T','1Z1V','1Z1W','1Z1X','1Z1Y','1Z1Z',
-  '1Z1a','1Z1b','1Z1c','1Z1d','1Z1e','1Z1f','K051','K052','K053','K054','K055','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6','7B00','7B001','7B002','7B003','7B004','7B005','7B006','7B00y','7B00z','ZV420')
+GP_codes=c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18.','1Z19.','1Z1A.','1Z1B.','1Z1C.','1Z1D.','1Z1E.','1Z1F.',
+'1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
+'1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
+'7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420')
 GP_records=read_GP(GP_codes)
 View(GP_records)
 
-# OPCS codes for kidney disease
+# OPCS codes for kidney disease & failure
 
 OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2')
 OPCS_records=read_OPCS(OPCS_codes)
 View(OPCS_records)
+
+# ICD10 codes for kidney failure (CKD5 or onwards) specifically
+
+ICD10_codes=c('N18.5', 'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5')
+ICD10_records=read_ICD10(ICD10_codes)
+View(ICD10_records)
+
+# CKD stage 5 'N18.5', 'N18.0', 'G63.8', 'I32.8', 
+# Dialysis 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3',
+# HD 'T82.4', 'Z49.1'
+# PD 'Z49.2', 'R88.0', 
+# Txpx 'T86.1', 'Z94.0', 'N16.5'
+
+
 
 ##Hypertension
 
@@ -287,3 +303,123 @@ diagnosis_counts <- OPCS_records %>%
   arrange(desc(count))
 # View the result
 print(diagnosis_counts)
+
+## Getting primary care renal function
+
+# serum creatinine
+serum_creat=read_GP('44J3.')
+View(serum_creat)
+
+serum_creat_tidy <- serum_creat %>%
+  mutate(
+    value1 = as.numeric(value1),
+    value2 = as.numeric(value2),
+    value3 = as.numeric(value3)
+) %>%
+  select(-dob, -assess_date, -data_provider, -read_2, -read_3, -prev, -value3)
+
+View(serum_creat_tidy)
+
+summary_stats <- serum_creat_tidy %>%
+  summarise(
+    # Mean of the columns
+    mean_value1 = mean(value1, na.rm = TRUE),
+    mean_value2 = mean(value2, na.rm = TRUE),
+    
+    # Percentiles (e.g., 25th, 50th, 75th)
+    p5_value1 = quantile(value1, 0.05, na.rm = TRUE),
+    p50_value1 = quantile(value1, 0.50, na.rm = TRUE), # Median
+    p95_value1 = quantile(value1, 0.95, na.rm = TRUE),
+    
+    p5_value2 = quantile(value2, 0.05, na.rm = TRUE),
+    p50_value2 = quantile(value2, 0.50, na.rm = TRUE), # Median
+    p95_value2 = quantile(value2, 0.95, na.rm = TRUE),
+  )
+
+print(summary_stats)
+
+count_above_300 <- serum_creat_tidy %>%
+  filter(value1 > 300) %>%
+  summarise(count = n())
+
+# View the count
+print(count_above_300)
+
+creatinine_longitudinal <- serum_creat_tidy %>%
+  group_by(eid) %>%
+  mutate(test_id = row_number()) %>%
+  pivot_wider(names_from = test_id, 
+              values_from = c(value1, value2, event_dt, event_age), 
+              names_glue = "test_{test_id}_{.value}") %>%
+  ungroup()
+
+View(creatinine_longitudinal)
+
+# eGFR MDRD
+eGFR_MDRD=read_GP('451E.')
+View(eGFR_MDRD)
+
+eGFR_MDRD_tidy <- eGFR_MDRD %>%
+  mutate(
+    value1 = as.numeric(value1),
+    value2 = as.numeric(value2),
+    value3 = as.numeric(value3)
+) %>%
+  select(-dob, -assess_date, -data_provider, -read_2, -read_3, -prev, -value3)
+
+View(eGFR_MDRD_tidy)
+
+eGFR_MDRD_longitudinal <- serum_creat_tidy %>%
+  group_by(eid) %>%
+  mutate(test_id = row_number()) %>%
+  pivot_wider(names_from = test_id, 
+              values_from = c(value1, value2, event_dt, event_age), 
+              names_glue = "test_{test_id}_{.value}") %>%
+  ungroup()
+
+View(eGFR_MDRD_longitudinal)
+
+# eGFR CKD-EPI
+eGFR_CKDEPI=read_GP('451K.')
+View(eGFR_CKDEPI)
+
+eGFR_MDRD_tidy <- eGFR_MDRD %>%
+  mutate(
+    value1 = as.numeric(value1),
+    value2 = as.numeric(value2),
+    value3 = as.numeric(value3)
+) %>%
+  select(-dob, -assess_date, -data_provider, -read_2, -read_3, -prev, -value3)
+
+View(eGFR_MDRD_tidy)
+
+eGFR_MDRD_longitudinal <- serum_creat_tidy %>%
+  group_by(eid) %>%
+  mutate(test_id = row_number()) %>%
+  pivot_wider(names_from = test_id, 
+              values_from = c(value1, value2, event_dt, event_age), 
+              names_glue = "test_{test_id}_{.value}") %>%
+  ungroup()
+
+View(eGFR_MDRD_longitudinal)
+
+
+
+
+
+
+
+
+# Sandbox
+
+# Summarize multiple columns: 'value1', 'value2', and 'value3'
+summary_stats <- serum_creat_tidy %>%
+  summarise(
+    num_observations = n(),          
+    mean_value1 = mean(value1, na.rm = TRUE),
+    mean_value2 = mean(value2, na.rm = TRUE),
+    mean_value3 = mean(value3, na.rm = TRUE)
+  )
+
+# View the summary statistics
+print(summary_stats)
