@@ -8,6 +8,7 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/UKBB_Health_Recor
 library('dplyr')
 library('ggplot2')
 library('tidyr')
+library('data.table')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -34,8 +35,8 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/new_baseline.R") 
 # ICD10 codes for kidney disease & failure
 
 ICD10_codes=c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_CKD=read_ICD10(ICD10_codes)
+View(ICD10_records_CKD)
 
 # Need some identification of kidney failure from eGFR/creatinine
 
@@ -47,20 +48,48 @@ GP_codes=c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18
 '1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
 '1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
 '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_CKD=read_GP(GP_codes)
+View(GP_records_CKD)
 
 # OPCS codes for kidney disease & failure
 
-OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2')
-OPCS_records=read_OPCS(OPCS_codes)
-View(OPCS_records)
+OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2')
+OPCS_records_ESKD=read_OPCS(OPCS_codes)
+View(OPCS_records_ESKD)
+
+OPCS_codes=c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9')
+OPCS_records_txpx=read_OPCS(OPCS_codes)
+View(OPCS_records_txpx)
+
+OPCS_codes=c('L74.2', 'L74.4','L74.5','L74.6','L74.7')
+OPCS_records_HD=read_OPCS(OPCS_codes)
+View(OPCS_records_HD)
+
+OPCS_codes=c('X41.1', 'X41.2')
+OPCS_records_PD=read_OPCS(OPCS_codes)
+View(OPCS_records_PD)
 
 # ICD10 codes for kidney failure (CKD5 or onwards) specifically
 
 ICD10_codes=c('N18.5', 'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_ESKD=read_ICD10(ICD10_codes)
+View(ICD10_records_ESKD)
+
+ICD10_codes=c('N18.5', 'N18.0', 'G63.8', 'I32.8')
+ICD10_records_CKD5=read_ICD10(ICD10_codes)
+View(ICD10_records_CKD5)
+
+ICD10_codes=c('Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3')
+ICD10_records_HD=read_ICD10(ICD10_codes)
+View(ICD10_records_HD)
+
+ICD10_codes=c('Z49.2', 'R88.0')
+ICD10_records_PD=read_ICD10(ICD10_codes)
+View(ICD10_records_PD)
+
+ICD10_codes=c('T86.1', 'Z94.0', 'N16.5')
+ICD10_records_txpx=read_ICD10(ICD10_codes)
+View(ICD10_records_txpx)
 
 # CKD stage 5 'N18.5', 'N18.0', 'G63.8', 'I32.8', 
 # Dialysis 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3',
@@ -68,21 +97,42 @@ View(ICD10_records)
 # PD 'Z49.2', 'R88.0', 
 # Txpx 'T86.1', 'Z94.0', 'N16.5'
 
+# GP read codes for kidney failure (CKD5 or onwards) specifically
 
+GP_codes=c('1Z14.','1Z1K.','1Z1L.','1Z1d.','1Z1e.','1Z1f.','K055.','7L1A0','7L1A1','7L1A2','7L1A4','7L1A5','7L1A6',
+'7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420')
+GP_records_ESKD=read_GP(GP_codes)
+View(GP_records_ESKD)
+
+GP_codes=c('1Z14.','1Z1K.','1Z1L.','1Z1d.','1Z1e.','1Z1f.','K055.')
+GP_records_CKD5=read_GP(GP_codes)
+View(GP_records_CKD5)
+
+GP_codes=c('7L1A0','7L1A2')
+GP_records_HD=read_GP(GP_codes)
+View(GP_records_HD)
+
+GP_codes=c('7L1A1','7L1A4','7L1A5','7L1A6')
+GP_records_PD=read_GP(GP_codes)
+View(GP_records_PD)
+
+GP_codes=c('7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420')
+GP_records_txpx=read_GP(GP_codes)
+View(GP_records_txpx)
 
 ##Hypertension
 
 # GP read codes for hypertension
 
 GP_codes=c('G2', 'G20', 'G200',  'G2...', 'G20..', 'G200.', 'G201.', 'G203.', 'G20z.', 'G24..', 'G240.', 'G240z', 'G241.', 'G241z', 'G244.', 'G24z', 'G24z0', 'G24zz', 'G25', 'G250', 'G251', 'G26', 'G28', 'G2y', 'G2z', 'Gyu2', 'Gyu20')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_HTN=read_GP(GP_codes)
+View(GP_records_HTN)
 
 # ICD-10 codes for hypertension
 
 ICD10_codes=c('I10', 'I11', 'I12', 'I13', 'I15', 'I67.4')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_HTN=read_ICD10(ICD10_codes)
+View(ICD10_records_HTN)
 
 # Medications codes for hypertension (CCBs, ACEis, thiazides, a-blockers)
 
@@ -95,8 +145,8 @@ View(ICD10_records)
 ICD10_codes=c('E10','E10.0','E10.1','E10.2','E10.3','E10.4','E10.5','E10.6','E10.7','E10.8','E10.9','E11.0','E11.1','E11.2','E11.3','E11.4','E11.5','E11.6','E11.7','E11.8','E11.9',
   'E12.0','E12.1','E12.2','E12.3','E12.4','E12.5','E12.6','E12.7','E12.8','E12.9','E13.0','E13.1','E13.2','E13.3','E13.4','E13.5','E13.6','E13.7','E13.8','E13.9','E14.0',
   'E14.1','E14.2','E14.3','E14.4','E14.5','E14.6','E14.7','E14.8','E14.9')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_DM=read_ICD10(ICD10_codes)
+View(ICD10_records_DM)
 
 # GP read codes for diabetes
 
@@ -104,36 +154,36 @@ GP_codes=c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C
   'C10EB','C10EC','C10ED','C10EE','C10EF','C10EG','C10EH','C10EJ','C10EK','C10EL','C10EM','C10EN','C10EP','C10EQ','C10ER','C10F','C10F0','C10F1','C10F2',
   'C10F3','C10F4','C10F5','C10F6','C10F7','C10F8','C10F9','C10FA','C10FB','C10FC','C10FD','C10FE','C10FF','C10FG','C10FH','C10FJ','C10FK','C10FL','C10FM',
   'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_DM=read_GP(GP_codes)
+View(GP_records_DM)
 
 ##AF
 
 # ICD10 codes for AF
 
 ICD10_codes=c('I48', 'I48.0', 'I48.1', 'I48.2', 'I48.91')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_AF=read_ICD10(ICD10_codes)
+View(ICD10_records_AF)
 
 # GP read codes for AF
 
 GP_codes=c('G573.', 'G5730', 'G5731', 'G5732', 'G5733', 'G5734', 'G5735', 'G5736', 'G5737', 'G5738', 'G5739', 'G573z')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_AF=read_GP(GP_codes)
+View(GP_records_AF)
 
 ## High cholesterol
 
 # ICD10 codes for high cholesterol
 
 ICD10_codes=c('E78.0', 'E78.2', 'E78.4', 'E78.5', 'E78.8', 'I48.2', 'I48.91')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_hypercholesterolaemia=read_ICD10(ICD10_codes)
+View(ICD10_records_hypercholesterolaemia)
 
 # GP read codes for high cholesterol
 
 GP_codes=c('C320.', 'C3200', 'C3201', 'C3202', 'C3203', 'C3204', 'C3205', 'C3206', 'C320y', 'C320z', 'C322.', 'C3220', 'C324.')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_hypercholesterolaemia=read_GP(GP_codes)
+View(GP_records_hypercholesterolaemia)
 
 ## Need some measure of cholesterol purely from LDL measurements
 
@@ -145,16 +195,42 @@ View(GP_records)
 #Taken from the definition used by the UKBDRS study but with a few specific forms of dementia with a specific rare infective, alcoholic or monogenic cause excluded (CJD, HIV-related dementia, Huntingdon's disease, Korsakoff's)
 
 ICD10_codes=c('F00','F00.0','F00.1','F00.2','F00.9','F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','F02','F02.0','F02.3','F02.8','F03','F05.1','G30','G30.0','G30.1','G30.8','G30.9','G31.0','G31.1','G31.8','I67.3')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_dementia=read_ICD10(ICD10_codes)
+View(ICD10_records_dementia)
+
+ICD10_codes=c('F00','F00.0','F00.1','F00.2','F00.9','G30','G30.0','G30.1','G30.8','G30.9')
+ICD10_records_alzheimers=read_ICD10(ICD10_codes)
+View(ICD10_records_alzheimers)
+
+ICD10_codes=c('F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','I67.3')
+ICD10_records_vascular=read_ICD10(ICD10_codes)
+View(ICD10_records_vascular)
+
+ICD10_codes=c('F02','F02.0','F02.3','F02.8','F03','F05.1','G31.0','G31.1','G31.8')
+ICD10_records_otherdementia=read_ICD10(ICD10_codes)
+View(ICD10_records_otherdementia)
+
+## need to get subtypes in there
 
 # ICD9 codes would be nice to have if possible
 
 # Read codes for dementia
 
 GP_codes=c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_dementia=read_GP(GP_codes)
+View(GP_records_dementia)
+
+GP_codes=c('Eu00.','Eu000','Eu001','Eu002','Eu00z')
+GP_records_alzheimers=read_GP(GP_codes)
+View(GP_records_azlheimers)
+
+GP_codes=c('Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z')
+GP_records_vascular=read_GP(GP_codes)
+View(GP_records_vascular)
+
+GP_codes=c('Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041')
+GP_records_otherdementia=read_GP(GP_codes)
+View(GP_records_otherdementia)
 
 # Dementia from death records
 
@@ -169,14 +245,14 @@ View(GP_records)
 # ICD10 codes for depression
 
 ICD10_codes=c('F320', 'F321', 'F322', 'F323', 'F328', 'F329', 'F330', 'F331', 'F332', 'F333', 'F334', 'F328', 'F339')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_depression=read_ICD10(ICD10_codes)
+View(ICD10_records_depression)
 
 # GP read codes for depression
 
 GP_codes=c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_depression=read_GP(GP_codes)
+View(GP_records_depression)
 
 # Medication codes for depression
 
@@ -185,8 +261,8 @@ View(GP_records)
 # ICD10 codes for traumatic brain injury
 
 ICD10_codes=c('S060', 'S061', 'S062', 'S063', 'S064', 'S065', 'S066', 'S067', 'S068', 'S069', 'S070', 'S071', 'S078', 'S079', 'S097', 'S098', 'S099')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_TBI=read_ICD10(ICD10_codes)
+View(ICD10_records_TBI)
 
 ##Stroke/TIA
 
@@ -195,16 +271,16 @@ View(ICD10_records)
 ICD10_codes=c('I60.0', 'I60.1', 'I60.2', 'I60.3', 'I60.4', 'I60.5', 'I60.6', 'I60.7', 'I60.8', 'I60.9', 'I61.0', 'I61.1', 'I61.2', 'I61.3', 'I61.4', 'I61.5', 'I61.6', 'I61.8', 'I61.9','I62.9', 'I63.0', 
 'I63.1', 'I63.2', 'I63.3', 'I63.4', 'I63.5', 'I63.6', 'I63.8', 'I63.9', 'I64.X', 'I65.0', 'I65.1', 'I65.2', 'I65.3', 'I65.8', 'I65.9', 'I66.0', 'I66.1', 'I66.2', 'I66.3', 'I66.4', 'I66.8', 'I66.9', 'G45.0', 
 'G45.1', 'G45.2', 'G45.3', 'G45.8', 'G45.9', 'G46.0', 'G46.1',  'G46.2', 'G46.3', 'G46.4', 'G46.5', 'G46.6', 'G46.7', 'G46.8')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_strokeTIA=read_ICD10(ICD10_codes)
+View(ICD10_records_strokeTIA)
 
 # GP read codes for stroke/TIA
 
 GP_codes=c('G61..', 'G610.', 'G611.', 'G612.', 'G613.', 'G614.', 'G615.', 'G616.', 'G617.', 'G618.', 'G619.', 'G61X.', 'G61X0', 'G61X1', 'G61z.', 'G62z.', 'G63..', 'G630.', 'G631.', 'G632.', 'G633.', 'G634.', 
 'G63y0', 'G63y1', 'G63z.', 'G64..', 'G640.', 'G6400', 'G641.', 'G6410', 'G64z.', 'G64z0', 'G65..', 'G650.', 'G651.', 'G6510', 'G652.', 'G653.', 'G654.', 'G656.', 'G657.', 'G65y.', 'G65z.', 'G65z0', 'G65z1', 'G65zz', 'G66..', 
 'G660.', 'G661.', 'G662.', 'G663.', 'G664.', 'G665.', 'G666.', 'G667.', 'G668.', 'G67..', 'G6710.')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_strokeTIA=read_GP(GP_codes)
+View(GP_records_strokeTIA)
 
 ## Parental history of dementia
 
@@ -223,14 +299,14 @@ View(GP_records)
 # Read codes for MCI
 
 GP_codes=c('Eu057','X00RS')
-GP_records=read_GP(GP_codes)
-View(GP_records)
+GP_records_MCI=read_GP(GP_codes)
+View(GP_records_MCI)
 
 #ICD10 codes for MCI
 
 ICD10_codes=c('F06.7')
-ICD10_records=read_ICD10(ICD10_codes)
-View(ICD10_records)
+ICD10_records_MCI=read_ICD10(ICD10_codes)
+View(ICD10_records_MCI)
 
 # Self-reported data
 
@@ -262,7 +338,105 @@ read_selfreport(1609) # glomerulonephritis
 # The eventual UKBDRS used the following 11 predictors: age, diabetes, depression, stroke, hypertension, high cholesterol, Townsend deprivation score, education, sex (male), household occupancy, parental history (and optionally, ApoE status)
 # Patients with baseline dementia or developing dementia within the first 12 months were excluded
 
+##Uploading data tables into R project
+
+#GP records
+suffixes <- c("ESKD", "CKD", "HD", "PD", "txpx", "CKD5", "dementia", "alzheimers", "vascular", "otherdementia", "MCI", "depression", "strokeTIA", "DM", "AF", "hypercholesterolaemia", "HTN" )
+
+for (suffix in suffixes) {
+  df_name <- paste0("GP_records_", suffix)
+  df <- get(df_name)
+  filename <- paste0("GP_records_", suffix, ".csv")
+  write.csv(df, file = filename, row.names = FALSE)
+  system(paste("dx upload", filename))
+}
+
+#ICD10 records
+suffixes <- c("ESKD", "CKD", "HD", "PD", "txpx", "CKD5", "dementia", "alzheimers", "vascular", "otherdementia", "MCI", "depression", "strokeTIA", "DM", "AF", "hypercholesterolaemia", "HTN" )
+
+for (suffix in suffixes) {
+  df_name <- paste0("ICD10_records_", suffix)
+  df <- get(df_name)
+  filename <- paste0("ICD10_records_", suffix, ".csv")
+  write.csv(df, file = filename, row.names = FALSE)
+  system(paste("dx upload", filename))
+}
+
+#OPSC records
+suffixes <- c("ESKD", "txpx", "HD", "PD")
+
+for (suffix in suffixes) {
+  df_name <- paste0("ICD10_records_", suffix)
+  df <- get(df_name)
+  filename <- paste0("ICD10_records_", suffix, ".csv")
+  write.csv(df, file = filename, row.names = FALSE)
+  system(paste("dx upload", filename))
+}
+
+# Unifying data into a single dataset
+
+conditions <- c("ESKD", "CKD", "HD", "PD", "txpx", "CKD5", "dementia", "alzheimers", 
+                "vascular", "otherdementia", "MCI", "depression", "strokeTIA", 
+                "DM", "AF", "hypercholesterolaemia", "HTN")
+
+condition_tables <- list()
+
+for (condition in conditions) {
+  # Get object names in environment that match the pattern *_condition
+  table_names <- ls(pattern = paste0(".*_", condition, "$"))
+  
+  if (length(table_names) == 0) {
+    warning(paste("No tables found for condition:", condition))
+    next
+  }
+  
+  # Load the tables
+  tables <- mget(table_names, inherits = TRUE)
+  
+  # Combine and clean
+  combined_dt <- rbindlist(lapply(tables, function(dt) {
+    dt <- as.data.table(dt)
+    if (!"eid" %in% names(dt)) stop(paste("Missing 'eid' column in table for", condition))
+    unique(dt[, .(eid)])
+  }), use.names = TRUE, fill = TRUE)
+  
+  # Flag presence of condition
+  combined_dt[, (condition) := 1]
+  combined_dt <- unique(combined_dt)
+  
+  condition_tables[[condition]] <- combined_dt
+}
+
+# Merge all condition presence tables by 'eid'
+master <- Reduce(function(x, y) merge(x, y, by = "eid", all = TRUE), condition_tables)
+
+# Replace NAs with 0
+for (col in setdiff(names(master), "eid")) {
+  set(master, which(is.na(master[[col]])), col, 0)
+}
+
+# View and save result
+print(master)
+View(master)
+
+write.csv(master, file="master.csv")
+system("dx upload master.csv")
+
 ## Summary statistics
+
+# From master table
+
+#Condition counts
+condition_counts <- sapply(master[, -1, with = FALSE], function(x) sum(x == 1, na.rm = TRUE))
+condition_counts <- sort(condition_counts, decreasing = TRUE)
+
+print(condition_counts)
+
+table(master$ESKD, master$dementia)
+tab <- table(master$ESKD, master$dementia)
+dimnames(tab) <- list("ESKD" = c("No", "Yes"), "dementia" = c("No", "Yes"))
+print(tab)
+chisq.test(master$ESKD, master$dementia)
 
 # Count ICD10 diagnoses
 # Remove duplicate rows based on 'eid' and 'diag_icd10', then count the occurrences of each diagnosis
