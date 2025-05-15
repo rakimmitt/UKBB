@@ -419,8 +419,14 @@ for (col in setdiff(names(master), "eid")) {
 print(master)
 View(master)
 
-write.csv(master, file="master.csv")
-system("dx upload master.csv")
+write.csv(master_dataset, file="master_dataset.csv")
+system("dx upload master_dataset.csv")
+
+# Load a table from the folder
+
+system("dx download 'master_dataset.csv'")
+library(readr)
+master_dataset <- read_csv("master_dataset.csv")
 
 ## Summary statistics
 
@@ -437,6 +443,17 @@ tab <- table(master$ESKD, master$dementia)
 dimnames(tab) <- list("ESKD" = c("No", "Yes"), "dementia" = c("No", "Yes"))
 print(tab)
 chisq.test(master$ESKD, master$dementia)
+
+#Logistic regression
+
+fit2 <- glm(dementia ~ ESKD + depression + strokeTIA + DM + AF + hypercholesterolaemia + HTN,
+            data = master,
+            family = binomial(link = "logit")) # binomial distribution for logistic regression
+
+fit2 %>% summary()
+fit2 %>% confint()
+fit2$coefficients %>% exp()
+fit2 %>% confint() %>% exp()
 
 # Count ICD10 diagnoses
 # Remove duplicate rows based on 'eid' and 'diag_icd10', then count the occurrences of each diagnosis
