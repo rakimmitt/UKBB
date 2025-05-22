@@ -9,6 +9,7 @@ library('dplyr')
 library('ggplot2')
 library('tidyr')
 library('data.table')
+library('readr')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -29,6 +30,12 @@ system('dx download file-GZKXVx8J9jFqG2GvJV8vzxK1') # download death causes
 system('dx download file-Gz0jqg0Jf08B1XP8y0X45K0V') # download cancer registry tsv (with ICD9)
 
 source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/new_baseline.R") #create baseline table
+
+# To get previously used files back into current session
+
+system('dx download file-J0Y0X4QJXpPgyGg8KBb4kjjz') # file of choice using unique ID
+master_dataset <- read_csv("master_dataset.csv") # file is called master_dataset
+View(master_dataset)
 
 ##Kidney disease and failure
 
@@ -335,6 +342,257 @@ read_selfreport(1607) # diabetic nephropathy
 read_selfreport(1608) # nephritis
 read_selfreport(1609) # glomerulonephritis
 
+# Define a list of conditions and associated self-report codes
+condition_list <- list(
+  selfreport_HTN = c(1065, 1072),
+  selfreport_strokeTIA = c(1081, 1082, 1583),
+  selfreport_ESKD = c(1192, 1193, 1194),
+  selfreport_CKD = c(1192, 1193, 1194, 1405, 1427, 1519, 1520, 1607, 1608, 1609),
+  selfreport_dementia = c(1263),
+  selfreport_depression = c(1286),
+  selfreport_af = c(1471, 1483),
+  selfreport_hypercholesterolaemia = c(1473),
+  selfreport_htn = c(1065),
+  selfreport_DM = c(1222, 1223, 1607)
+)
+
+# Initialize an empty list to store results
+condition_dfs <- list()
+
+# Loop over each condition
+for (condition_name in names(condition_list)) {
+  codes <- condition_list[[condition_name]]
+  
+  # Read and combine all self-report data for the codes
+  df_list <- lapply(codes, read_selfreport)
+  combined_df <- do.call(rbind, df_list)
+  
+  # Remove duplicate eids in case someone matches multiple codes
+  combined_df <- unique(combined_df["eid"])
+  
+  # Add binary indicator column
+  combined_df[[condition_name]] <- 1
+  
+  # Keep only eid and the indicator
+  condition_dfs[[condition_name]] <- combined_df
+}
+
+# Merge all conditions into a single dataframe by eid
+self_reported_conditions <- Reduce(function(x, y) merge(x, y, by = "eid", all = TRUE), condition_dfs)
+
+# Replace NA with 0
+self_reported_conditions[is.na(self_reported_conditions)] <- 0
+
+# View final dataset
+View(self_reported_conditions)
+
+# Attempt to get first occurrence for each condition
+
+CKD = first_occurence(ICD10 = c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4', 'N18.5', 
+                              'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
+                       GP = c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18.','1Z19.','1Z1A.','1Z1B.','1Z1C.','1Z1D.','1Z1E.','1Z1F.',
+                              '1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
+                              '1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
+                              '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'), 
+                      OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2'), cancer='')
+View(CKD)
+
+## Attempt to do it all at once
+
+# Helper function to get indicator data
+get_indicator <- function(condition_name, codes) {
+  safe_vector <- function(x) {
+    if (is.null(x) || length(x) == 0) {
+      character(0)
+    } else if (any(is.na(x))) {
+      x[!is.na(x)]
+    } else {
+      x
+    }
+  }
+  
+  icd10_codes <- safe_vector(codes$ICD10)
+  gp_codes    <- safe_vector(codes$GP)
+  opcs_codes  <- safe_vector(codes$OPCS)
+  
+  # For cancer: must be a single string, empty string if none
+  cancer_code <- if (!is.null(codes$cancer) && length(codes$cancer) > 0) codes$cancer[1] else ""
+  
+  df <- first_occurence(
+    ICD10 = icd10_codes,
+    GP = gp_codes,
+    OPCS = opcs_codes,
+    cancer = cancer_code
+  )
+  
+  if (nrow(df) == 0) return(NULL)
+  
+  df <- unique(df[, c("eid", "date", "source")])
+  df[[condition_name]] <- 1
+  names(df)[names(df) == "date"] <- paste0(condition_name, "_date")
+  names(df)[names(df) == "source"] <- paste0(condition_name, "_source")
+  
+  return(df)
+}
+
+# Main function
+define_conditions <- function(condition_list) {
+  condition_dfs <- list()
+  
+  for (condition_name in names(condition_list)) {
+    indicator_df <- get_indicator(condition_name, condition_list[[condition_name]])
+    
+    if (!is.null(indicator_df)) {
+      condition_dfs[[condition_name]] <- indicator_df
+    }
+  }
+  
+  if (length(condition_dfs) == 0) {
+    stop("No condition data frames generated.")
+  }
+  
+  # Merge all condition data frames on eid
+  merged_conditions <- Reduce(function(x, y) merge(x, y, by = "eid", all = TRUE), condition_dfs)
+  
+  # Fill NAs in indicator columns with 0
+  for (condition_name in names(condition_list)) {
+    if (condition_name %in% names(merged_conditions)) {
+      merged_conditions[[condition_name]][is.na(merged_conditions[[condition_name]])] <- 0
+    }
+  }
+  
+  return(merged_conditions)
+}
+
+# --- Call the function and preview ---
+condition_data <- define_conditions(condition_definitions)
+View(condition_data)
+
+# Define conditions
+condition_definitions <- list(
+  CKD = list(
+    ICD10 = c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2',
+              'T82.4','N18.5', 'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3',
+              'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
+    GP = c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18.','1Z19.','1Z1A.','1Z1B.','1Z1C.','1Z1D.','1Z1E.','1Z1F.',
+'1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
+'1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
+'7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2')
+  ),
+
+  ESKD = list(
+    ICD10 = c('N18.5', 'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
+    GP = c('1Z14.','1Z1K.','1Z1L.','1Z1d.','1Z1e.','1Z1f.','K055.','7L1A0','7L1A1','7L1A2','7L1A4','7L1A5','7L1A6',
+'7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2')
+  ),
+
+  txpx = list(
+    ICD10 = c('T86.1', 'Z94.0', 'N16.5'),
+    GP = c('7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9')
+  ),
+
+  HD = list(
+    ICD10 = c('T82.4', 'Z49.1'),
+    GP = c('7L1A0','7L1A2'),
+    OPCS = c('L74.2', 'L74.4','L74.5','L74.6','L74.7')
+  ),
+
+  PD = list(
+    ICD10 = c('Z49.2', 'R88.0'),
+    GP = c('7L1A1','7L1A4','7L1A5','7L1A6'),
+    OPCS = c('X41.1', 'X41.2')
+  ),
+
+  HTN = list(
+    ICD10 = c('I10', 'I11', 'I12', 'I13', 'I15', 'I67.4'),
+    GP = c('G2', 'G20', 'G200',  'G2...', 'G20..', 'G200.', 'G201.', 'G203.', 'G20z.', 'G24..', 'G240.', 'G240z', 'G241.', 'G241z', 'G244.', 'G24z', 'G24z0', 'G24zz', 'G25', 'G250', 'G251', 'G26', 'G28', 'G2y', 'G2z', 'Gyu2', 'Gyu20'),
+    OPCS = character(0)
+  ),
+
+  DM = list(
+    ICD10 = c('E10','E10.0','E10.1','E10.2','E10.3','E10.4','E10.5','E10.6','E10.7','E10.8','E10.9','E11.0','E11.1','E11.2','E11.3','E11.4','E11.5','E11.6','E11.7','E11.8','E11.9',
+  'E12.0','E12.1','E12.2','E12.3','E12.4','E12.5','E12.6','E12.7','E12.8','E12.9','E13.0','E13.1','E13.2','E13.3','E13.4','E13.5','E13.6','E13.7','E13.8','E13.9','E14.0',
+  'E14.1','E14.2','E14.3','E14.4','E14.5','E14.6','E14.7','E14.8','E14.9'),
+    GP = c('C10','C109J','C109J','C109K','C10C','C10D','C10E','C10E0','C10E1','C10E2','C10E3','C10E4','C10E5','C10E6','C10E7','C10E8','C10E9','C10EA',
+  'C10EB','C10EC','C10ED','C10EE','C10EF','C10EG','C10EH','C10EJ','C10EK','C10EL','C10EM','C10EN','C10EP','C10EQ','C10ER','C10F','C10F0','C10F1','C10F2',
+  'C10F3','C10F4','C10F5','C10F6','C10F7','C10F8','C10F9','C10FA','C10FB','C10FC','C10FD','C10FE','C10FF','C10FG','C10FH','C10FJ','C10FK','C10FL','C10FM',
+  'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP'),
+    OPCS = character(0)
+  ),
+
+  AF = list(
+    ICD10 = c('I48', 'I48.0', 'I48.1', 'I48.2', 'I48.91'),
+    GP = c('G573.', 'G5730', 'G5731', 'G5732', 'G5733', 'G5734', 'G5735', 'G5736', 'G5737', 'G5738', 'G5739', 'G573z'),
+    OPCS = character(0)
+  ),
+
+  hypercholesterolaemia = list(
+    ICD10 = c('E78.0', 'E78.2', 'E78.4', 'E78.5', 'E78.8', 'I48.2', 'I48.91'),
+    GP = c('C320.', 'C3200', 'C3201', 'C3202', 'C3203', 'C3204', 'C3205', 'C3206', 'C320y', 'C320z', 'C322.', 'C3220', 'C324.'),
+    OPCS = character(0)
+  ),
+
+  dementia = list(
+    ICD10 = c('F00','F00.0','F00.1','F00.2','F00.9','F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','F02','F02.0','F02.3','F02.8','F03','F05.1','G30','G30.0','G30.1','G30.8','G30.9','G31.0','G31.1','G31.8','I67.3'),
+    GP = c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041'),
+    OPCS = character(0)
+  ),
+
+  alzheimers = list(
+    ICD10 = c('F00','F00.0','F00.1','F00.2','F00.9','G30','G30.0','G30.1','G30.8','G30.9'),
+    GP = c('Eu00.','Eu000','Eu001','Eu002','Eu00z'),
+    OPCS = character(0)
+  ),
+
+  vascular = list(
+    ICD10 = c('F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','I67.3'),
+    GP = c('Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z'),
+    OPCS = character(0)
+  ),
+
+ depression = list(
+    ICD10 = c('F320', 'F321', 'F322', 'F323', 'F328', 'F329', 'F330', 'F331', 'F332', 'F333', 'F334', 'F328', 'F339'),
+    GP = c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2'),
+    OPCS = character(0)
+  ),
+
+ TBI = list(
+    ICD10 = c('S060', 'S061', 'S062', 'S063', 'S064', 'S065', 'S066', 'S067', 'S068', 'S069', 'S070', 'S071', 'S078', 'S079', 'S097', 'S098', 'S099'),
+    GP = character(0),
+    OPCS = character(0)
+  ),
+
+ strokeTIA = list(
+    ICD10 = c('I60.0', 'I60.1', 'I60.2', 'I60.3', 'I60.4', 'I60.5', 'I60.6', 'I60.7', 'I60.8', 'I60.9', 'I61.0', 'I61.1', 'I61.2', 'I61.3', 'I61.4', 'I61.5', 'I61.6', 'I61.8', 'I61.9','I62.9', 'I63.0', 
+'I63.1', 'I63.2', 'I63.3', 'I63.4', 'I63.5', 'I63.6', 'I63.8', 'I63.9', 'I64.X', 'I65.0', 'I65.1', 'I65.2', 'I65.3', 'I65.8', 'I65.9', 'I66.0', 'I66.1', 'I66.2', 'I66.3', 'I66.4', 'I66.8', 'I66.9', 'G45.0', 
+'G45.1', 'G45.2', 'G45.3', 'G45.8', 'G45.9', 'G46.0', 'G46.1',  'G46.2', 'G46.3', 'G46.4', 'G46.5', 'G46.6', 'G46.7', 'G46.8'),
+    GP = c('G61..', 'G610.', 'G611.', 'G612.', 'G613.', 'G614.', 'G615.', 'G616.', 'G617.', 'G618.', 'G619.', 'G61X.', 'G61X0', 'G61X1', 'G61z.', 'G62z.', 'G63..', 'G630.', 'G631.', 'G632.', 'G633.', 'G634.', 
+'G63y0', 'G63y1', 'G63z.', 'G64..', 'G640.', 'G6400', 'G641.', 'G6410', 'G64z.', 'G64z0', 'G65..', 'G650.', 'G651.', 'G6510', 'G652.', 'G653.', 'G654.', 'G656.', 'G657.', 'G65y.', 'G65z.', 'G65z0', 'G65z1', 'G65zz', 'G66..', 
+'G660.', 'G661.', 'G662.', 'G663.', 'G664.', 'G665.', 'G666.', 'G667.', 'G668.', 'G67..', 'G6710.'),
+    OPCS = character(0)
+  ),
+
+ MCI = list(
+    ICD10 = c('F06.7'),
+    GP = c('Eu057','X00RS'),
+    OPCS = character(0)
+  )
+)
+
+# --- Call the function and get results ---
+condition_data <- define_conditions(condition_definitions)
+
+# --- Preview the result ---
+View(condition_data)
+
+# NB, other ways to get definitions (if poss): blood tests for CKD, diabetes and hypercholesterolaemia; medication codes for diabetes, depression; dementia from death codes
+
+
+
+
 # The eventual UKBDRS used the following 11 predictors: age, diabetes, depression, stroke, hypertension, high cholesterol, Townsend deprivation score, education, sex (male), household occupancy, parental history (and optionally, ApoE status)
 # Patients with baseline dementia or developing dementia within the first 12 months were excluded
 
@@ -593,6 +851,18 @@ eGFR_MDRD_longitudinal <- serum_creat_tidy %>%
   ungroup()
 
 View(eGFR_MDRD_longitudinal)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
