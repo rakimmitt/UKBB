@@ -399,24 +399,29 @@ View(CKD)
 
 ## Attempt to do it all at once
 
-# Helper function to get indicator data
+safe_codes <- function(x) {
+  if (is.null(x) || length(x) == 0) return("")
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return("")
+  return(x)
+}
+
 get_indicator <- function(condition_name, codes) {
-  safe_vector <- function(x) {
-    if (is.null(x) || length(x) == 0) {
-      character(0)
-    } else if (any(is.na(x))) {
-      x[!is.na(x)]
-    } else {
-      x
-    }
+  icd10_codes <- safe_codes(codes$ICD10)
+  gp_codes    <- safe_codes(codes$GP)
+  opcs_codes  <- safe_codes(codes$OPCS)
+  
+  cancer_code <- if (!is.null(codes$cancer) && length(codes$cancer) > 0) {
+    codes$cancer <- codes$cancer[!is.na(codes$cancer)]
+    if (length(codes$cancer) > 0) codes$cancer[1] else ""
+  } else {
+    ""
   }
   
-  icd10_codes <- safe_vector(codes$ICD10)
-  gp_codes    <- safe_vector(codes$GP)
-  opcs_codes  <- safe_vector(codes$OPCS)
-  
-  # For cancer: must be a single string, empty string if none
-  cancer_code <- if (!is.null(codes$cancer) && length(codes$cancer) > 0) codes$cancer[1] else ""
+  print(paste(condition_name, "ICD10:", paste(icd10_codes, collapse = ",")))
+  print(paste(condition_name, "GP:", paste(gp_codes, collapse = ",")))
+  print(paste(condition_name, "OPCS:", paste(opcs_codes, collapse = ",")))
+  print(paste(condition_name, "cancer:", cancer_code))
   
   df <- first_occurence(
     ICD10 = icd10_codes,
@@ -478,38 +483,44 @@ condition_definitions <- list(
 '1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
 '1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
 '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
-    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2')
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2'),
+    Cancer = ""
   ),
 
   ESKD = list(
     ICD10 = c('N18.5', 'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
     GP = c('1Z14.','1Z1K.','1Z1L.','1Z1d.','1Z1e.','1Z1f.','K055.','7L1A0','7L1A1','7L1A2','7L1A4','7L1A5','7L1A6',
 '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
-    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2')
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2'),
+    Cancer = ""
   ),
 
   txpx = list(
     ICD10 = c('T86.1', 'Z94.0', 'N16.5'),
     GP = c('7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'),
-    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9')
+    OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9'),
+    Cancer = ""
   ),
 
   HD = list(
     ICD10 = c('T82.4', 'Z49.1'),
     GP = c('7L1A0','7L1A2'),
-    OPCS = c('L74.2', 'L74.4','L74.5','L74.6','L74.7')
+    OPCS = c('L74.2', 'L74.4','L74.5','L74.6','L74.7'),
+    Cancer = ""
   ),
 
   PD = list(
     ICD10 = c('Z49.2', 'R88.0'),
     GP = c('7L1A1','7L1A4','7L1A5','7L1A6'),
-    OPCS = c('X41.1', 'X41.2')
+    OPCS = c('X41.1', 'X41.2'),
+    Cancer = ""
   ),
 
   HTN = list(
     ICD10 = c('I10', 'I11', 'I12', 'I13', 'I15', 'I67.4'),
     GP = c('G2', 'G20', 'G200',  'G2...', 'G20..', 'G200.', 'G201.', 'G203.', 'G20z.', 'G24..', 'G240.', 'G240z', 'G241.', 'G241z', 'G244.', 'G24z', 'G24z0', 'G24zz', 'G25', 'G250', 'G251', 'G26', 'G28', 'G2y', 'G2z', 'Gyu2', 'Gyu20'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   DM = list(
@@ -520,49 +531,57 @@ condition_definitions <- list(
   'C10EB','C10EC','C10ED','C10EE','C10EF','C10EG','C10EH','C10EJ','C10EK','C10EL','C10EM','C10EN','C10EP','C10EQ','C10ER','C10F','C10F0','C10F1','C10F2',
   'C10F3','C10F4','C10F5','C10F6','C10F7','C10F8','C10F9','C10FA','C10FB','C10FC','C10FD','C10FE','C10FF','C10FG','C10FH','C10FJ','C10FK','C10FL','C10FM',
   'C10FN','C10FP','C10FQ','C10FR','C10FS','C10G','C10G0','C10H','C10H0','C10M','C10M0','C10N','C10N0','C10N1','PKyP'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   AF = list(
     ICD10 = c('I48', 'I48.0', 'I48.1', 'I48.2', 'I48.91'),
     GP = c('G573.', 'G5730', 'G5731', 'G5732', 'G5733', 'G5734', 'G5735', 'G5736', 'G5737', 'G5738', 'G5739', 'G573z'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   hypercholesterolaemia = list(
     ICD10 = c('E78.0', 'E78.2', 'E78.4', 'E78.5', 'E78.8', 'I48.2', 'I48.91'),
     GP = c('C320.', 'C3200', 'C3201', 'C3202', 'C3203', 'C3204', 'C3205', 'C3206', 'C320y', 'C320z', 'C322.', 'C3220', 'C324.'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   dementia = list(
     ICD10 = c('F00','F00.0','F00.1','F00.2','F00.9','F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','F02','F02.0','F02.3','F02.8','F03','F05.1','G30','G30.0','G30.1','G30.8','G30.9','G31.0','G31.1','G31.8','I67.3'),
     GP = c('Eu00.','Eu000','Eu001','Eu002','Eu00z','Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z','Eu02.','Eu020','Eu023','Eu025','Eu02y','Eu02z','Eu041'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   alzheimers = list(
     ICD10 = c('F00','F00.0','F00.1','F00.2','F00.9','G30','G30.0','G30.1','G30.8','G30.9'),
     GP = c('Eu00.','Eu000','Eu001','Eu002','Eu00z'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
   vascular = list(
     ICD10 = c('F01','F01.0','F01.1','F01.2','F01.3','F01.8','F01.9','I67.3'),
     GP = c('Eu01.','Eu01.','Eu010','Eu011','Eu012','Eu013','Eu01y','Eu01z'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
  depression = list(
     ICD10 = c('F320', 'F321', 'F322', 'F323', 'F328', 'F329', 'F330', 'F331', 'F332', 'F333', 'F334', 'F328', 'F339'),
     GP = c('E112.', 'E1120', 'E1121', 'E1122', 'E1123', 'E1124', 'E1125', 'E1126', 'E112z', 'E113.', 'E1131', 'E1132', 'E1133', 'E1134', 'E1135', 'E1136', 'E1137', 'E113z', 'E11y2', 'E11z2'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
  TBI = list(
     ICD10 = c('S060', 'S061', 'S062', 'S063', 'S064', 'S065', 'S066', 'S067', 'S068', 'S069', 'S070', 'S071', 'S078', 'S079', 'S097', 'S098', 'S099'),
-    GP = character(0),
-    OPCS = character(0)
+    GP = "",
+    OPCS = "",
+    Cancer = ""
   ),
 
  strokeTIA = list(
@@ -572,13 +591,15 @@ condition_definitions <- list(
     GP = c('G61..', 'G610.', 'G611.', 'G612.', 'G613.', 'G614.', 'G615.', 'G616.', 'G617.', 'G618.', 'G619.', 'G61X.', 'G61X0', 'G61X1', 'G61z.', 'G62z.', 'G63..', 'G630.', 'G631.', 'G632.', 'G633.', 'G634.', 
 'G63y0', 'G63y1', 'G63z.', 'G64..', 'G640.', 'G6400', 'G641.', 'G6410', 'G64z.', 'G64z0', 'G65..', 'G650.', 'G651.', 'G6510', 'G652.', 'G653.', 'G654.', 'G656.', 'G657.', 'G65y.', 'G65z.', 'G65z0', 'G65z1', 'G65zz', 'G66..', 
 'G660.', 'G661.', 'G662.', 'G663.', 'G664.', 'G665.', 'G666.', 'G667.', 'G668.', 'G67..', 'G6710.'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   ),
 
  MCI = list(
     ICD10 = c('F06.7'),
     GP = c('Eu057','X00RS'),
-    OPCS = character(0)
+    OPCS = "",
+    Cancer = ""
   )
 )
 
