@@ -10,6 +10,9 @@ library('ggplot2')
 library('tidyr')
 library('data.table')
 library('readr')
+library('dvmisc')
+library('psych')
+library('tidyverse')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -33,6 +36,10 @@ source_url("https://raw.githubusercontent.com/hdg204/UKBB/main/new_baseline.R") 
 
 # To get previously used files back into current session
 
+system('dx download file-J0gX930JXpPbxQYgfJPvzfJk') # file of choice using unique ID
+condition_data <- read_csv("condition_data.csv") # file is called condition_data
+View(condition_data)
+
 system('dx download file-J0Y0X4QJXpPgyGg8KBb4kjjz') # file of choice using unique ID
 master_dataset <- read_csv("master_dataset.csv") # file is called master_dataset
 View(master_dataset)
@@ -48,9 +55,8 @@ condition_list <- list(
   selfreport_CKD = c(1192, 1193, 1194, 1405, 1427, 1519, 1520, 1607, 1608, 1609),
   selfreport_dementia = c(1263),
   selfreport_depression = c(1286),
-  selfreport_af = c(1471, 1483),
+  selfreport_AF = c(1471, 1483),
   selfreport_hypercholesterolaemia = c(1473),
-  selfreport_htn = c(1065),
   selfreport_DM = c(1222, 1223, 1607)
 )
 
@@ -230,19 +236,6 @@ View(condition_data)
 # NB, other ways to get definitions (if poss): blood tests for CKD, diabetes and hypercholesterolaemia; medication codes for diabetes, depression; dementia from death codes
 
 
-
-
-# Attempt to get first occurrence for each condition
-
-CKD = first_occurence(ICD10 = c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4', 'N18.5', 
-                              'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
-                       GP = c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18.','1Z19.','1Z1A.','1Z1B.','1Z1C.','1Z1D.','1Z1E.','1Z1F.',
-                              '1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
-                              '1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
-                              '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'), 
-                      OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2'), cancer='')
-View(CKD)
-
 ## Attempt to do it all at once
 
 safe_codes <- function(x) {
@@ -320,6 +313,18 @@ condition_data <- define_conditions(condition_definitions)
 View(condition_data)
 
 
+## Getting a condition duration for all diagnoses
+
+# Censor dates that are missing (currently set to 1901-01-01)
+
+conditions <- c("CKD", "ESKD", "HD", "PD", "txpx", "HTN", "DM", "AF", "dementia", "alzheimers", "vascular", "depression", "hypercholesterolaemia", "MCI", "strokeTIA")
+date_cols <- paste0(conditions, "_date")
+
+# Replace '1901-01-01' with NA across those date columns
+condition_data <- condition_data %>%
+  mutate(across(all_of(date_cols), ~ replace(.x, .x == as.Date("1901-01-01"), NA)))
+
+
 
 
 
@@ -334,3 +339,25 @@ View(condition_data)
 
 # Merge with master dataset
 
+
+
+
+
+
+
+
+
+
+
+# Leftovers
+
+# Attempt to get first occurrence for each condition
+
+CKD = first_occurence(ICD10 = c('N18','N18.1','N18.2','N18.3','N18.4','N18.5','N18.9','N19','Z49.0','Z99.2','T86.1','Z94.0','Y84.1','Z49.0','Z99.2','T82.4', 'N18.5', 
+                              'N18.0', 'G63.8', 'I32.8', 'Z49', 'Z49.0', 'Y84.1', 'Z99.2', 'Y60.2', 'Y61.2', 'Y62.2', 'Y84.1', 'Z49.3', 'T82.4', 'Z49.1', 'Z49.2', 'R88.0', 'T86.1', 'Z94.0', 'N16.5'),
+                       GP = c('1Z10.','1Z11.','1Z12.','1Z13.','1Z14.','1Z15.','1Z16.','1Z17.','1Z18.','1Z19.','1Z1A.','1Z1B.','1Z1C.','1Z1D.','1Z1E.','1Z1F.',
+                              '1Z1G.','1Z1H.','1Z1J.','1Z1K.','1Z1L.','1Z1M.','1Z1N.','1Z1O.','1Z1P.','1Z1Q.','1Z1R.','1Z1S.','1Z1T.','1Z1V.','1Z1W.','1Z1X.','1Z1Y.','1Z1Z.',
+                              '1Z1a.','1Z1b.','1Z1c.','1Z1d.','1Z1e.','1Z1f.','K051.','K052.','K053.','K054.','K055.','7L1A0','7L1A1','7L1A2','7L1A3','7L1A4','7L1A5','7L1A6',
+                              '7B00.','7B001','7B002','7B003', '7B004','7B005','7B006','7B00y','7B00z','ZV420'), 
+                      OPCS = c('M01.2','M01.3','M01.4','M01.5','M01.8','M01.9', 'L74.2', 'L74.4','L74.5','L74.6','L74.7','X41.1', 'X41.2'), cancer='')
+View(CKD)
