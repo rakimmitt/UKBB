@@ -44,6 +44,10 @@ system('dx download file-J0Y0X4QJXpPgyGg8KBb4kjjz') # file of choice using uniqu
 master_dataset <- read_csv("master_dataset.csv") # file is called master_dataset
 View(master_dataset)
 
+# To save a file from current session
+
+write.csv(master_dataset, file="master_dataset.csv")
+system("dx upload master_dataset.csv")
 
 ## Self-reported codes
 
