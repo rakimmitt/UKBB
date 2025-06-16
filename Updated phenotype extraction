@@ -9,9 +9,13 @@ library('dplyr')
 library('ggplot2')
 library('tidyr')
 library('data.table')
+install.packages('readr')
 library('readr')
+install.packages('dvmisc')
 library('dvmisc')
+install.packages('psych')
 library('psych')
+install.packages('tidyverse')
 library('tidyverse')
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
@@ -40,9 +44,9 @@ system('dx download file-J0gX930JXpPbxQYgfJPvzfJk') # file of choice using uniqu
 condition_data <- read_csv("condition_data.csv") # file is called condition_data
 View(condition_data)
 
-system('dx download file-J0Y0X4QJXpPgyGg8KBb4kjjz') # file of choice using unique ID
-master_dataset <- read_csv("master_dataset.csv") # file is called master_dataset
-View(master_dataset)
+system('dx download file-J104VJQJXpPZBq2K3x7KyX6g') # file of choice using unique ID
+master_full <- read_csv("master_full.csv") # file is called master_full
+View(master_full)
 
 # To save a file from current session
 
