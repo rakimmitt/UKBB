@@ -44,14 +44,14 @@ system('dx download file-J0gX930JXpPbxQYgfJPvzfJk') # file of choice using uniqu
 condition_data <- read_csv("condition_data.csv") # file is called condition_data
 View(condition_data)
 
-system('dx download file-J104VJQJXpPZBq2K3x7KyX6g') # file of choice using unique ID
-master_full <- read_csv("master_full.csv") # file is called master_full
-View(master_full)
+system('dx download file-J19JYV0JXpPY3f2QGQVpBJ1q') # file of choice using unique ID
+master <- read_csv("master.csv") # file is called master
+View(master)
 
 # To save a file from current session
 
-write.csv(master_dataset, file="master_dataset.csv")
-system("dx upload master_dataset.csv")
+write.csv(master, file="master.csv")
+system("dx upload master.csv")
 
 # The eventual UKBDRS used the following 11 predictors: age [age_at_index], diabetes [DM], depression [depression], stroke [strokeTIA], hypertension [HTN], high cholesterol [hypercholesterolaemia], 
 # Townsend deprivation score [Townsend_deprivation], education [age_completed_education], sex (male) [sex], household occupancy [household_occupancy], parental history [parental_hx_dementia] (and optionally, ApoE status)
@@ -59,9 +59,11 @@ system("dx upload master_dataset.csv")
 
 ## logistic regression (if y_logical is a 0/1 or F/T outcome)
 
-fit_dementia <- glm(dementia ~ ESKD + age_at_index + sex + Townsend_deprivation + smoking_status + DM + HTN + depression + strokeTIA + hypercholesterolaemia + age_completed_education + household_occupancy + parental_hx_dementia,
+fit_dementia <- glm(dementia_after_baseline ~ ESKD_at_baseline + age_at_baseline + sex + Townsend_deprivation + DM_at_baseline + HTN_at_baseline + depression_at_baseline + strokeTIA_at_baseline + hypercholesterolaemia_at_baseline +
+                    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
             data = master,
             family = binomial(link = "logit")) # binomial distribution for logistic regression
+            subset = dementia_at_baseline == 0
 
 fit_dementia %>% summary()
 fit_dementia %>% confint()
