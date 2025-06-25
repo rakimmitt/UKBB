@@ -17,6 +17,13 @@ install.packages('psych')
 library('psych')
 install.packages('tidyverse')
 library('tidyverse')
+install.packages('pROC')
+library(pROC)
+install.packages('caret')
+library(caret)
+install.packages("cmprsk")
+library(cmprsk)
+library(survival)
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
@@ -44,7 +51,7 @@ system('dx download file-J0gX930JXpPbxQYgfJPvzfJk') # file of choice using uniqu
 condition_data <- read_csv("condition_data.csv") # file is called condition_data
 View(condition_data)
 
-system('dx download file-J19JYV0JXpPY3f2QGQVpBJ1q') # file of choice using unique ID
+system('dx download file-J1JyGz8JXpPZkgB6997GbVVP') # file of choice using unique ID
 master <- read_csv("master.csv") # file is called master
 View(master)
 
@@ -53,17 +60,80 @@ View(master)
 write.csv(master, file="master.csv")
 system("dx upload master.csv")
 
-# The eventual UKBDRS used the following 11 predictors: age [age_at_index], diabetes [DM], depression [depression], stroke [strokeTIA], hypertension [HTN], high cholesterol [hypercholesterolaemia], 
-# Townsend deprivation score [Townsend_deprivation], education [age_completed_education], sex (male) [sex], household occupancy [household_occupancy], parental history [parental_hx_dementia] (and optionally, ApoE status)
-# Patients with baseline dementia or developing dementia within the first 12 months were excluded
+# The eventual UKBDRS used the following 11 predictors: age [age_at_baseline], diabetes [DM_at_baseline], depression [depression_at_baseline], stroke [strokeTIA_at_baseline], hypertension [HTN_at_baseline], high cholesterol [hypercholesterolaemia_at_baseline], 
+# Townsend deprivation score [townsend_most_deprived], education [age_completed_education_final], sex (male) [sex_binary], household occupancy [lives_alone], parental history [parental_hx_dementia] (and optionally, ApoE status)
+# Patients with baseline dementia or developing dementia within the first 12 (we used 6) months were excluded
+
+## Creating the UKB-DRS in UKBB
+# Beta coefficients taken from https://github.com/MelisAnaturk/dementia_risk_score/blob/929ea730e6378109bfa32539aaa6b5f7a89e2484/results/crr_ukbdrs_coefficients.csv
+
+master <- master %>%
+  mutate(
+    ukb_drs_score =
+      0.178 * age_at_baseline +
+      0.431 * parental_hx_dementia +
+     -0.041 * age_completed_education_final +
+      0.536 * DM_at_baseline +
+      0.228 * townsend_most_deprived +
+      0.556 * depression_at_baseline +
+      0.655 * strokeTIA_at_baseline +
+      0.159 * HTN_at_baseline +
+      0.104 * hypercholesterolaemia_at_baseline +
+      0.141 * lives_alone +
+      0.169 * sex_binary
+  )
+
+## ROC characteristics of UKB_DRS
+
+# Filter to age >50 (or 47/48 because my patients have been allowed to get two years older before baseline), ensure nobody with dementia at baseline (in reality, this means none within the first 6 months of baseline)
+
+master_filtered <- master %>%
+  filter(age_at_baseline > 48, dementia_at_baseline == 0)
+
+roc_obj <- roc(master_filtered$dementia_after_baseline, master_filtered$ukb_drs_score, 
+               levels = c(0,1), direction = "<") 
+
+# Plot ROC curve
+plot(roc_obj, main = "ROC Curve for UKB-DRS predicting dementia")
+
+# AUC
+auc_value <- auc(roc_obj)
+print(paste("AUC:", round(auc_value, 3)))
+
+## Need to make my own CRR (Fine and Gray) with my own predictors to see how they compare to the UKB_DRS paper ones
+
+# dementia_before_death is 1 for dementia diagnosis, 2 for death before dementia and 0 if neither occur
+# time_to_event is time to either death, dementia or censoring at the end of follow-up
+
+crr_model <- crr(
+  ftime = master$time_to_event,
+  fstatus = master$dementia_before_death,
+  cov1 = as.matrix(master %>%
+                    select(
+                      age_at_baseline,
+                      parental_hx_dementia,
+                      age_completed_education_final,
+                      DM_at_baseline,
+                      townsend_most_deprived,
+                      depression_at_baseline,
+                      strokeTIA_at_baseline,
+                      HTN_at_baseline,
+                      hypercholesterolaemia_at_baseline,
+                      lives_alone,
+                      sex_binary
+                    ))
+)
+
+summary(crr_model)
 
 ## logistic regression (if y_logical is a 0/1 or F/T outcome)
 
 fit_dementia <- glm(dementia_after_baseline ~ ESKD_at_baseline + age_at_baseline + sex + Townsend_deprivation + DM_at_baseline + HTN_at_baseline + depression_at_baseline + strokeTIA_at_baseline + hypercholesterolaemia_at_baseline +
                     age_completed_education + household_occupancy_categorical + parental_hx_dementia,
             data = master,
-            family = binomial(link = "logit")) # binomial distribution for logistic regression
+            family = binomial(link = "logit"), # binomial distribution for logistic regression
             subset = dementia_at_baseline == 0
+            )
 
 fit_dementia %>% summary()
 fit_dementia %>% confint()
