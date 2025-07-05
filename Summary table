@@ -1,0 +1,117 @@
+library(dplyr)
+library(tidyr)
+library(flextable)
+library(officer)
+
+# Filter for complete cases
+complete_master <- master %>%
+  filter(
+    !is.na(age),
+    !is.na(sex),
+    !is.na(Townsend_deprivation_quintile),
+    !is.na(age_completed_education),
+    !is.na(household_occupancy_categorical),
+    !is.na(parental_hx_dementia)
+  )
+
+summary_table <- complete_master %>%
+  group_by(ESKD_group) %>%
+  summarise(
+    n = n(),
+    
+    age_mean = round(mean(age, na.rm = TRUE), 1),
+    age_sd = round(sd(age, na.rm = TRUE), 1),
+    
+    male_n = sum(sex == "Male", na.rm = TRUE),
+    male_pct = round(100 * male_n / n, 1),
+    
+    DM_n = sum(DM == 1, na.rm = TRUE),
+    DM_pct = round(100 * DM_n / n, 1),
+    
+    HTN_n = sum(HTN == 1, na.rm = TRUE),
+    HTN_pct = round(100 * HTN_n / n, 1),
+    
+    depression_n = sum(depression == 1, na.rm = TRUE),
+    depression_pct = round(100 * depression_n / n, 1),
+    
+    strokeTIA_n = sum(strokeTIA == 1, na.rm = TRUE),
+    strokeTIA_pct = round(100 * strokeTIA_n / n, 1),
+    
+    hyperchol_n = sum(hypercholesterolaemia == 1, na.rm = TRUE),
+    hyperchol_pct = round(100 * hyperchol_n / n, 1),
+    
+    age_edu_mean = round(mean(age_completed_education, na.rm = TRUE), 1),
+    age_edu_sd = round(sd(age_completed_education, na.rm = TRUE), 1),
+    
+    parental_hx_n = sum(parental_hx_dementia == 1, na.rm = TRUE),
+    parental_hx_pct = round(100 * parental_hx_n / n, 1)
+  )
+
+summary_long <- summary_table %>%
+  pivot_longer(-ESKD_group, names_to = "Variable", values_to = "Value") %>%
+  pivot_wider(names_from = ESKD_group, values_from = Value)
+
+ft <- flextable(summary_long) %>%
+  autofit() %>%
+  theme_booktabs() %>%
+  align(align = "center", part = "all")
+
+doc <- read_docx() %>%
+  body_add_flextable(ft)
+
+print(doc, target = "summary_table.docx")
+
+---
+
+townsend_table <- complete_master %>%
+  group_by(ESKD_group, Townsend_deprivation_quintile) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(ESKD_group) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+
+# Pivot for table layout
+townsend_long <- townsend_table %>%
+  pivot_longer(cols = c(n, pct), names_to = "Metric", values_to = "Value") %>%
+  unite("Variable", Townsend_deprivation_quintile, Metric, sep = "_") %>%
+  pivot_wider(names_from = ESKD_group, values_from = Value)
+
+# Create flextable
+ft_townsend <- flextable(townsend_long) %>%
+  autofit() %>%
+  theme_booktabs() %>%
+  align(align = "center", part = "all")
+
+# Export to Word
+doc_townsend <- read_docx() %>%
+  body_add_flextable(ft_townsend)
+
+print(doc_townsend, target = "townsend_table.docx")
+
+---
+
+# Summarise household_occupancy_categorical by ESKD_group
+occupancy_table <- complete_master %>%
+  group_by(ESKD_group, household_occupancy_categorical) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(ESKD_group) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+
+# Pivot for table layout
+occupancy_long <- occupancy_table %>%
+  pivot_longer(cols = c(n, pct), names_to = "Metric", values_to = "Value") %>%
+  unite("Variable", household_occupancy_categorical, Metric, sep = "_") %>%
+  pivot_wider(names_from = ESKD_group, values_from = Value)
+
+# Create flextable
+ft_occupancy <- flextable(occupancy_long) %>%
+  autofit() %>%
+  theme_booktabs() %>%
+  align(align = "center", part = "all")
+
+# Export to Word
+doc_occupancy <- read_docx() %>%
+  body_add_flextable(ft_occupancy)
+
+print(doc_occupancy, target = "household_occupancy_table.docx")
