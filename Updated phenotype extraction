@@ -143,6 +143,23 @@ fit_dementia %>% confint()
 fit_dementia $coefficients %>% exp()
 fit_dementia %>% confint() %>% exp()
 
+## If timing is not an issue (ie doesn't matter whether dementia preceded other diagnoses)
+
+fit_dementia <- glm(dementia ~ ESKD + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+                    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
+            data = master,
+            family = binomial(link = "logit"), # binomial distribution for logistic regression
+            subset = dementia_at_baseline == 0
+            )
+
+fit_dementia %>% summary()
+fit_dementia %>% confint()
+
+## these are the unexponentiated values - exp() is how R exponentiates them
+
+fit_dementia $coefficients %>% exp()
+fit_dementia %>% confint() %>% exp()
+
 ## Self-reported codes
 
 # Define a list of conditions and associated self-report codes
