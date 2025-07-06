@@ -149,7 +149,6 @@ fit_dementia <- glm(dementia ~ ESKD + age + sex + Townsend_deprivation + DM + HT
                     age_completed_education + household_occupancy_categorical + parental_hx_dementia,
             data = master,
             family = binomial(link = "logit"), # binomial distribution for logistic regression
-            subset = dementia_at_baseline == 0
             )
 
 fit_dementia %>% summary()
