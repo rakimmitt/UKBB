@@ -1,0 +1,173 @@
+# Forest plot for results of logistic regressions
+  
+# ESKD overall with different forms of dementia
+  
+# Fit models
+fit_alzheimers <- glm(
+  alzheimers ~ ESKD + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
+  data = complete_master, family = binomial(link = "logit")
+)
+
+fit_dementia <- glm(
+  dementia ~ ESKD + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
+  data = complete_master, family = binomial(link = "logit")
+)
+
+fit_vascular <- glm(
+  vascular ~ ESKD + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
+  data = complete_master, family = binomial(link = "logit")
+)
+
+# Function to extract OR and CI
+extract_or <- function(fit) {
+  coef_est <- coef(summary(fit))["ESKD", "Estimate"]
+  se <- coef(summary(fit))["ESKD", "Std. Error"]
+  ci <- confint(fit)["ESKD", ]
+  data.frame(
+    OR = exp(coef_est),
+    lower = exp(ci[1]),
+    upper = exp(ci[2])
+  )
+}
+
+# Extract results
+results_alzheimers <- extract_or(fit_alzheimers)
+results_dementia <- extract_or(fit_dementia)
+results_vascular <- extract_or(fit_vascular)
+
+# Add outcome labels
+results_alzheimers$Outcome <- "Alzheimer's Dementia"
+results_dementia$Outcome <- "All Dementia"
+results_vascular$Outcome <- "Vascular Dementia"
+
+# Combine
+results <- rbind(results_alzheimers, results_vascular, results_dementia)
+
+# Ensure order
+results$Outcome <- factor(results$Outcome, levels = c("Alzheimer's Dementia", "Vascular Dementia", "All Dementia"))
+
+# Plot
+ggplot(results, aes(x = OR, y = Outcome)) +
+  geom_point(size = 4, color = "black") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2, color = "steelblue") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  scale_x_continuous(breaks = seq(0.8, 2.2, by = 0.1), limits = c(0.8, 2.2)) +
+  xlab("Odds Ratio (95% CI) for ESKD") +
+  ylab("") +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.y = element_text(face = "bold"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line.x = element_line(color = "black", size = 0.8),
+    axis.line.y = element_blank()
+  )
+
+
+-----
+
+
+
+# Different forms of ESKD with dementia overall
+  
+  # Ensure control is defined and is the reference variable
+  
+complete_master$eskd_type <- ifelse(is.na(complete_master$eskd_type), "control", complete_master$eskd_type)
+complete_master$eskd_type <- factor(
+  complete_master$eskd_type,
+  levels = c("control", "ckd5_no_KRT", "hd", "pd", "transplant")
+)
+  
+  # Regression model
+  
+  fit_types <- glm(dementia ~ eskd_type + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+    age_completed_education + household_occupancy_categorical + parental_hx_dementia,
+  data = complete_master, family = binomial(link = "logit")
+)
+  
+  # Extract ORs
+  
+  summary_fit <- summary(fit_types)
+  conf_int <- confint(fit_types)
+  or_table <- data.frame(
+    Variable = rownames(summary_fit$coefficients),
+    OR = exp(coef(fit_types)),
+    lower = exp(conf_int[, 1]),
+    upper = exp(conf_int[, 2]),
+    p_value = summary_fit$coefficients[, "Pr(>|z|)"]
+  )
+  
+  # Keep only the ESKD type rows
+  results_types <- or_table[grep("^eskd_type", or_table$Variable), ]
+  
+  # Clean labels
+  results_types$Outcome <- gsub("eskd_type", "", results_types$Variable)
+  results_types$Outcome <- factor(results_types$Outcome, 
+                                  levels = c("ckd5_no_KRT", "hd", "pd", "transplant"))
+  
+  # Define plot limits
+  x_lower <- 0.7
+  x_upper <- 2.0
+  
+  # Cap CIs and create flags
+  results_types$capped_lower <- pmax(results_types$lower, x_lower)
+  results_types$capped_upper <- pmin(results_types$upper, x_upper)
+  
+  results_types$lower_truncated <- results_types$lower < x_lower
+  results_types$upper_truncated <- results_types$upper > x_upper
+  
+  # Split the data
+  within_bounds <- results_types[!results_types$lower_truncated & !results_types$upper_truncated, ]
+  outside_bounds <- results_types[results_types$lower_truncated | results_types$upper_truncated, ]
+  
+  # Begin plot
+  ggplot() +
+    # Points (all data)
+    geom_point(data = results_types, aes(x = OR, y = Outcome), size = 4, color = "black") +
+    
+    # Error bars only for CIs that are fully within bounds
+    geom_errorbarh(
+      data = within_bounds,
+      aes(xmin = lower, xmax = upper, y = Outcome),
+      height = 0.2,
+      color = "steelblue"
+    ) +
+    
+    # Arrows for upper-truncated
+    geom_segment(
+      data = outside_bounds[outside_bounds$upper_truncated, ],
+      aes(x = capped_lower, xend = x_upper, y = Outcome, yend = Outcome),
+      arrow = arrow(length = unit(0.1, "cm"), ends = "last", type = "closed"),
+      color = "steelblue"
+    ) +
+    
+    # Arrows for lower-truncated
+    geom_segment(
+      data = outside_bounds[outside_bounds$lower_truncated, ],
+      aes(x = x_lower, xend = capped_upper, y = Outcome, yend = Outcome),
+      arrow = arrow(length = unit(0.1, "cm"), ends = "first", type = "closed"),
+      color = "steelblue"
+    ) +
+    
+    # Reference line
+    geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+    
+    # Axis and theme
+    scale_x_continuous(
+      breaks = seq(x_lower, x_upper, by = 0.1),
+      limits = c(x_lower, x_upper)
+    ) +
+    xlab("Odds Ratio (95% CI) for Dementia (vs Control)") +
+    ylab("ESKD Type") +
+    theme_minimal(base_size = 14) +
+    theme(
+      axis.text.y = element_text(face = "bold"),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line.x = element_line(color = "black", size = 0.8),
+      axis.line.y = element_blank()
+    )
+  
