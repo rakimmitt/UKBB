@@ -14,6 +14,16 @@ complete_master <- master %>%
     !is.na(parental_hx_dementia)
   )
 
+complete_master <- complete_master %>%
+  mutate(
+    ESKD_group = case_when(
+      coalesce(ESKD, 0) == 1 & coalesce(dementia, 0) == 1 ~ "ESKD_dementia",
+      coalesce(ESKD, 0) == 1 & coalesce(dementia, 0) == 0 ~ "ESKD_no_dementia",
+      coalesce(ESKD, 0) == 0 & coalesce(dementia, 0) == 1 ~ "no_ESKD_dementia",
+      coalesce(ESKD, 0) == 0 & coalesce(dementia, 0) == 0 ~ "no_ESKD_no_dementia"
+    )
+  )
+
 summary_table <- complete_master %>%
   group_by(ESKD_group) %>%
   summarise(
