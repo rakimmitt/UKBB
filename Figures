@@ -1,3 +1,10 @@
+install.packages('ggpubr')
+library(ggpubr)
+install.packages('ggthemes')
+library(ggthemes)
+install.packages('ggprism')
+library(ggprism)
+
 # Forest plot for results of logistic regressions
   
 # ESKD overall with different forms of dementia
@@ -169,5 +176,117 @@ complete_master$eskd_type <- factor(
       panel.grid.minor = element_blank(),
       axis.line.x = element_line(color = "black", size = 0.8),
       axis.line.y = element_blank()
+    )
+  
+
+
+-----
+
+
+
+#Prevalence graph
+
+  # Step 1: Summarise prevalence by group
+  prevalence_table <- complete_master %>%
+    group_by(eskd_type) %>%
+    summarise(
+      N = n(),
+      Alzheimer_cases = sum(alzheimers == 1, na.rm = TRUE),
+      Vascular_cases = sum(vascular == 1, na.rm = TRUE),
+      All_cases = sum(dementia == 1, na.rm = TRUE),
+      Alzheimer_prevalence = 100 * Alzheimer_cases / N,
+      Vascular_prevalence = 100 * Vascular_cases / N,
+      All_prevalence = 100 * All_cases / N
+    )
+  
+  # Step 2: Print the prevalence table
+  print(prevalence_table)
+  
+  # Step 3: Reshape the table for plotting
+  prevalence_long <- prevalence_table %>%
+    select(eskd_type, Alzheimer_prevalence, Vascular_prevalence, All_prevalence) %>%
+    pivot_longer(cols = ends_with("_prevalence"),
+                 names_to = "DementiaType",
+                 values_to = "Prevalence") %>%
+    mutate(DementiaType = recode(DementiaType,
+                                 "Alzheimer_prevalence" = "Alzheimer's",
+                                 "Vascular_prevalence" = "Vascular",
+                                 "All_prevalence" = "All Dementia"))
+  
+  # Replace NA with "control" in eskd_type
+  prevalence_long$eskd_type <- as.character(prevalence_long$eskd_type)
+  prevalence_long$eskd_type[is.na(prevalence_long$eskd_type)] <- "control"
+  
+  # Convert to factor with specified order
+  prevalence_long$eskd_type <- factor(prevalence_long$eskd_type,
+                                      levels = c("ckd5_no_KRT", "hd", "pd", "transplant", "control"))
+  
+  # Step 4: Create the grouped bar plot
+  # Define dodge width and half offset
+  dodge_width <- 0.8
+  bar_width <- 0.8
+  nudge_val <- 0  # Centered bar — no nudge needed
+  
+  
+  # Custom color palette
+  color_palette <- c("All Dementia" = "deepskyblue3",  # Light grey for the background
+                     "Alzheimer's" = "blue3", # Light blue for Alzheimer's
+                     "Vascular" = "cyan") # Light green for Vascular
+
+  # Custom x-axis labels
+    x_labels <- c("ckd5_no_KRT" = "CKD 5",
+                "hd" = "HD",
+                "pd" = "PD",
+                "transplant" = "Transplant",
+                "control" = "Control")
+  
+  # Subset for all dementia
+    all_dementia_data <- prevalence_long %>%
+      filter(DementiaType == "All Dementia")
+    
+  # Subset for Alzheimer's and Vascular dementia
+    subtype_data <- prevalence_long %>%
+      filter(DementiaType %in% c("Alzheimer's", "Vascular"))
+    
+  # Plot
+  ggplot() +
+    # Background All Dementia bars — centered with no nudge
+    geom_bar(data = all_dementia_data,
+             aes(x = eskd_type, y = Prevalence, fill = DementiaType),
+             stat = "identity",
+             position = position_nudge(x = nudge_val),
+             width = 0.4) +
+    
+    # Foreground Alzheimer's and Vascular bars — dodged
+    geom_bar(data = subtype_data,
+             aes(x = eskd_type, y = Prevalence, fill = DementiaType),
+             stat = "identity",
+             position = position_dodge(width = dodge_width),
+             width = bar_width,
+             alpha = 0.95) +
+    
+    # Apply custom colors
+    scale_fill_manual(values = color_palette) +
+    
+    # Custom y-axis scale: Force breaks at intervals of 2%
+    # Force y-axis to start at 0 and align x-axis with y=0
+    scale_y_continuous(
+      breaks = seq(0, 100, by = 2),
+      expand = c(0, 0),
+      limits = c(0, NA)  # Lower limit 0; upper limit automatic
+    ) +
+    
+    # Custom x-axis labels
+    scale_x_discrete(labels = x_labels) +
+    
+    labs(title = "Dementia Prevalence by Kidney Disease Group",
+         x = "Group",
+         y = "Prevalence (%)",
+         fill = "Type of Dementia") +
+    theme_pubr(base_size = 14, base_family = "Times") +  # Lancet-like font and layout
+    theme(
+      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 12),
+      plot.title = element_text(face = "bold", hjust = 0.5),
+      legend.position = "right"
     )
   
