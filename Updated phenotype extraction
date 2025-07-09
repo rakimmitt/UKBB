@@ -147,9 +147,9 @@ fit_dementia %>% confint() %>% exp()
 
 ## If timing is not an issue (ie doesn't matter whether dementia preceded other diagnoses)
 
-fit_dementia <- glm(dementia ~ ESKD + age + sex + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
+fit_dementia <- glm(dementia ~ ESKD + age + sex + ever_smoker_binary + Townsend_deprivation + DM + HTN + depression + strokeTIA + hypercholesterolaemia +
                     age_completed_education + household_occupancy_categorical + parental_hx_dementia,
-            data = master,
+            data = complete_master,
             family = binomial(link = "logit"), # binomial distribution for logistic regression
             )
 
