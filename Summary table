@@ -34,6 +34,9 @@ summary_table <- complete_master %>%
     
     male_n = sum(sex == "Male", na.rm = TRUE),
     male_pct = round(100 * male_n / n, 1),
+
+    ever_smoker_n = sum(ever_smoker == 1, na.rm = TRUE),
+    ever_smoker_pct = round(100 * ever_smoker_n / n, 1),
     
     DM_n = sum(DM == 1, na.rm = TRUE),
     DM_pct = round(100 * DM_n / n, 1),
