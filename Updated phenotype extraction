@@ -24,6 +24,8 @@ library(caret)
 install.packages("cmprsk")
 library(cmprsk)
 library(survival)
+library(flextable)
+library(officer)
 
 # First download my files into the R session. You can delete lines if data source not necessary, but it's fairly fast even if you don't
 system('dx download file-GZKXxpQJKVzZ0BgzQZ1YYj9Z') # download GP registrations
